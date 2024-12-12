@@ -1,0 +1,292 @@
+1)
+login: 1
+
+@startuml
+
+participant Actor
+participant Loginpage
+participant logincontroller
+participant Users<<entity>>
+participant WebAppDashboard
+
+    Actor -> Loginpage: inserts Login details
+    activate Loginpage    
+    activate logincontroller
+    Loginpage -> logincontroller: Authenticate(login_detail)
+    activate Users
+    logincontroller->Users:isExists()
+
+    alt invalid user
+    Users-->logincontroller:False
+    logincontroller --> Loginpage: invalid user
+    Loginpage-->Actor:incorrect email or password
+
+    else authentication successful
+    Users-->logincontroller:True
+    deactivate Users
+    logincontroller --> Loginpage: Authentication successful
+    deactivate logincontroller
+    activate WebAppDashboard
+    Loginpage -> WebAppDashboard: Redirect to dashboard
+    destroy Loginpage
+    deactivate WebAppDashboard
+    end
+@enduml
+
+2)
+register: 1
+
+@startuml
+actor Student
+participant RegistrationPage <<boundary>>
+participant RegistrationController <<control>>
+participant StudentData <<entity>>
+participant Loginpage<<boundary>>
+
+activate RegistrationPage
+Student -> RegistrationPage: Enter registration details
+RegistrationPage -> RegistrationController: validateRegistration(details)
+activate RegistrationController
+
+alt Validation Failed
+    RegistrationController --> RegistrationPage: Registration Failed
+    RegistrationPage --> Student: Error Message (e.g., "Invalid details" or "Student ID already exists")
+else Validation Successful
+    RegistrationController -> StudentData: saveStudent(details)
+    activate StudentData
+    deactivate StudentData
+    RegistrationController --> RegistrationPage: Registration Successful
+    deactivate RegistrationController
+    RegistrationPage --> Student: Registration Successful Message
+    activate Loginpage
+    RegistrationPage->Loginpage:Redirects to login page
+    destroy RegistrationPage
+    deactivate  Loginpage
+end
+deactivate RegistrationController
+@enduml
+
+
+3)Club-Create post: 1
+
+@startuml
+actor Club
+participant "Dashboard" <<boundary>>
+participant postform<<boundary>>
+participant "PostController" <<control>>
+participant "Posts" <<entity>>
+
+activate Dashboard
+Club -> Dashboard: Select "Create Post"
+activate postform
+Dashboard -> postform: openPostForm()
+deactivate Dashboard
+
+Club -> postform: fillPostForm(title, content, tags, expirationDate)
+activate PostController
+postform-> PostController: Postnews(news)
+
+alt Validation Successful
+    PostController -> Posts: savePost(post)
+    activate Posts
+    PostController-->postform: Post Saved
+    postform-->Club:News Created Successfully
+    deactivate Posts
+else Validation Failed
+    PostController --> postform: Invalid post
+    postform-->Club: Fill out the missing fields
+    deactivate PostController
+    deactivate postform
+end
+
+@enduml
+
+4)view
+@startuml
+actor Student
+participant "NewsFeed" <<boundary>>
+participant "NewsController" <<control>>
+participant "PostService" <<entity>>
+
+activate NewsFeed
+Student -> NewsFeed: Access News Feed
+NewsFeed -> NewsController: loadNewsFeed()
+activate NewsController
+NewsController --> NewsFeed: displayTags("For You", "Other", ...) 
+NewsFeed --> Student: Show Tags
+
+alt Student Selects Tag
+    Student -> NewsFeed: selectTag("For You") 
+    NewsFeed -> NewsController: loadPostsByTag("For You")
+else Student Views "Other"
+    NewsFeed -> NewsController: loadAllPosts()
+end
+
+NewsController -> PostService: getPosts()
+activate PostService
+PostService --> NewsController: returnPosts(posts) 
+NewsController-->NewsFeed:returnpost()
+deactivate PostService
+NewsFeed --> Student: displayPosts(posts)
+
+alt Student Views Post Details
+    Student -> NewsFeed: selectPost(post)
+    NewsFeed->NewsController:loadpostdetail()
+    NewsController -> PostService: getPostDetails(postID)
+    activate PostService
+    PostService --> NewsController: returnPostDetails(postDetails)
+    NewsController-->NewsFeed:returnpostdetail()
+    deactivate PostService
+    NewsFeed -> Student: displayPostDetails(postDetails)
+end
+
+alt No Posts Available
+    NewsController -> NewsFeed: displayNoPostsMessage()
+    NewsFeed -> Student: Show "No news available at this time."
+end
+
+deactivate NewsController
+deactivate NewsFeed
+@enduml
+
+5) PR-post general :1
+
+@startuml
+actor Student
+actor PR
+participant "Dashboard" <<boundary>>
+participant postform<<boundary>>
+participant "PostController" <<control>>
+participant "Posts" <<entity>>
+participant "NotificationService" <<control>>
+
+activate Dashboard
+PR -> Dashboard: Select "Create Post"
+activate postform
+Dashboard -> postform: openPostForm()
+deactivate Dashboard
+
+PR-> postform: fillPostForm(title, description, tags)
+postform -> PostController: Postnews(news)
+
+alt Validation Successful
+    PostController -> Posts: SavePost(post)
+    activate Posts
+    Posts --> PostController: Post Saved
+    deactivate Posts
+    
+    PostController -> NotificationService: notifyStudents(postDetails)
+    activate NotificationService
+    NotificationService --> Student: Sends notification
+    deactivate NotificationService
+
+    PostController --> postform : Posted seccussfully
+    postform --> PR: Post Published Successfully
+else Validation Failed
+    PostController -> postform: displayValidationErrors()
+    postform -> PR: Display Error Messages
+end
+
+deactivate Dashboard
+deactivate PostController
+@enduml
+
+6)Review and approve
+
+@startuml
+actor PRRepresentative
+participant "Dashboard" <<boundary>>
+participant "ReviewController" <<control>>
+participant "PostService" <<entity>>
+participant "NotificationService" <<control>>
+participant ClubPresident
+
+activate Dashboard
+PRRepresentative -> Dashboard: Access Review Page
+Dashboard -> ReviewController: loadPendingPosts()
+activate ReviewController
+ReviewController -> PostService: getPendingPosts()
+activate PostService
+PostService --> ReviewController: returnPendingPosts(posts)
+deactivate PostService
+
+alt Pending Posts Exist
+    ReviewController -> Dashboard: displayPendingPosts(posts)
+    PRRepresentative -> Dashboard: selectPost(post)
+    Dashboard -> ReviewController: reviewPost(post)
+    ReviewController-->Dashboard:view post in reviewpage
+
+    alt Post Approved
+        PRRepresentative->Dashboard:select "approved"
+        Dashboard->ReviewController:Approved(Post)
+        ReviewController -> PostService: approvePost(post)
+        activate PostService
+        PostService --> ReviewController: postPublished()
+        deactivate PostService
+        ReviewController -> NotificationService: notifyClubPresident(postApproved)
+        NotificationService --> ClubPresident: Post Approved Notification
+    else Post Rejected
+        PRRepresentative -> Dashboard: select "Reject and comment"
+        Dashboard -> ReviewController: requestrejectionform()
+        ReviewController -> Dashboard: displayRejectionForm()
+        PRRepresentative -> Dashboard: fillRejectionForm(comments)
+        Dashboard->ReviewController:snedrejectionformat(Post)
+        ReviewController -> PostService: rejectPost(post, comments)
+        activate PostService
+        PostService --> ReviewController: postRejected()
+        deactivate PostService
+        ReviewController -> NotificationService: notifyClubPresident(postRejected)
+        NotificationService --> ClubPresident: Post Rejected Notification with Comments
+    end
+
+else No Pending Posts
+    ReviewController -> Dashboard: displayNoPendingPostsMessage()
+    Dashboard -> PRRepresentative: Show "No pending posts to review."
+end
+
+deactivate ReviewController
+deactivate Dashboard
+@enduml
+
+7)View submitted post ???
+
+@startuml
+actor ClubPresident
+participant "Dashboard" <<boundary>>
+participant "PostController" <<control>>
+participant "PostService" <<entity>>
+
+activate Dashboard
+ClubPresident -> Dashboard: Access Submitted Posts
+Dashboard -> PostController: loadSubmittedPosts()
+activate PostController
+PostController -> PostService: getSubmittedPosts()
+activate PostService
+PostService --> PostController: returnSubmittedPosts(posts)
+deactivate PostService
+
+alt Submitted Posts Exist
+    PostController -> Dashboard: displaySubmittedPosts(posts) 
+    ClubPresident -> Dashboard: selectPost(post)
+    Dashboard-> PostController:loadrequestedpost()
+
+    alt Post is Rejected
+        PostController->Dashboard:Displayselectedpostineditableformat()
+        ClubPresident -> Dashboard: editPost(post) 
+        Dashboard -> PostController: updatePost(post) 
+        PostController -> PostService: updatePost(post)
+        activate PostService
+        PostService --> PostController: postUpdated()
+        deactivate PostService
+        Dashboard -> ClubPresident: Show Updated Post
+    end
+
+else No Submitted Posts
+    PostController -> Dashboard: displayNoSubmittedPostsMessage()
+    Dashboard -> ClubPresident: Show "No submitted posts available."
+end
+
+deactivate PostController
+deactivate Dashboard
+@enduml
+
