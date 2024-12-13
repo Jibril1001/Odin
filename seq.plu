@@ -107,20 +107,21 @@ end
 @startuml
 actor Student
 actor PR
-participant "Dashboard" <<boundary>>
-participant postform<<boundary>>
-participant "PostController" <<control>>
-participant "Posts" <<entity>>
-participant "NotificationService" <<control>>
+boundary Dashboard
+boundary postformpage
+control PostController
+entity Posts
+control NotificationService
 
 activate Dashboard
 PR -> Dashboard: Select "Create Post"
-activate postform
-Dashboard -> postform: openPostForm()
-deactivate Dashboard
+activate postformpage
+Dashboard -> postformpage: openPostForm()
+destroy Dashboard
 
-PR-> postform: fillPostForm(title, description, tags)
-postform -> PostController: Postnews(news)
+PR-> postformpage: fillPostForm(title, description, tags)
+postformpage -> PostController: Postnews(news)
+activate PostController
 
 alt Validation Successful
     PostController -> Posts: SavePost(post)
@@ -128,23 +129,23 @@ alt Validation Successful
     Posts --> PostController: Post Saved
     deactivate Posts
     
-    PostController -> NotificationService: notifyStudents(postDetails)
+    PostController -> NotificationService: notifyStudents(post)
     activate NotificationService
     NotificationService --> Student: Sends notification
     deactivate NotificationService
 
-    PostController --> postform : Posted seccussfully
-    postform --> PR: Post Published Successfully
+    PostController --> postformpage : Posted seccussfully
+    postformpage --> PR: Post Published Successfully
 else Validation Failed
-    PostController -> postform: displayValidationErrors()
-    postform -> PR: Display Error Messages
+    PostController -> postformpage : displayValidationErrors()
+    deactivate PostController
+    postformpage -> PR: Display Error Messages
+    deactivate postformpage
 end
-
-deactivate Dashboard
-deactivate PostController
 @enduml
 
-6)Review and approve : 0
+
+6)Review and approve : 1
 
 @startuml
 actor PR
@@ -247,42 +248,74 @@ end
 deactivate Dashboard
 @enduml 
 
-8) rejected posts club: 1
+8) club rejected posts club: 1
 
 @startuml
+actor PR
 actor Club
-boundary Dashboard
-boundary rejectednews
-boundary editpage
-entity "Posts" 
+boundary Dashboard <<boundary>>
+boundary ReviewRequestedPosts <<boundary>>
+boundary PostReviewForm <<boundary>>
+control ReviewController <<control>>
+entity PostController <<entity>>
+control NotificationController <<control>>
 
 activate Dashboard
-Club -> Dashboard: Select rejected Posts
-activate rejectednews
-Dashboard -> rejectednews: open()
+PR -> Dashboard: Access Review Page
+Dashboard -> ReviewRequestedPosts: Load Pending Posts
 destroy Dashboard
-activate Posts
-rejectednews -> Posts: getrejectedPosts()
+activate ReviewRequestedPosts
+ReviewRequestedPosts -> ReviewController: getPendingPosts()
+activate ReviewController
+ReviewController -> PostController: fetchPendingPosts()
+activate PostController
 
-alt  No Submitted Posts
-    Posts --> rejectednews: No rejected posts
-    rejectednews --> Club: No rejected posts available.
-else Submitted Posts Exist
-    Posts--> rejectednews: posts with the rejecton comment
-    Club -> rejectednews: select Post
-    rejectednews->editpage:open()
-    destroy rejectednews
-    activate editpage
-    Club -> editpage: edit content and select submit
-    editpage -> Posts: updatepost()
-    Posts-->editpage:  Updated successfully
-    editpage-->Club: Updated Successfully
-    deactivate Posts
-    deactivate editpage
+alt Pending Posts Exist
+    PostController --> ReviewController: Posts List
+    deactivate PostController
+    ReviewController -> ReviewRequestedPosts: DisplayPendingPosts(posts)
+    ReviewRequestedPosts --> PR: Displays Pending Posts
+    PR -> ReviewRequestedPosts: Select a Post
+    ReviewRequestedPosts -> PostReviewForm: OpenPost(PostID)
+    destroy ReviewRequestedPosts
+    activate PostReviewForm
+
+    alt Post Approved
+        PR -> PostReviewForm: Select "Approve"
+        PostReviewForm -> ReviewController: approvePost(post)
+        ReviewController -> PostController: markPostAsApproved(post)
+        activate PostController
+        deactivate PostController
+        ReviewController -> NotificationController: notifyClub(status)
+        activate NotificationController
+        NotificationController --> Club: Post Approved Notification
+    else Post Rejected
+        PR -> PostReviewForm: Write Rejection Comment
+        PR -> PostReviewForm: Select Reject
+        PostReviewForm -> ReviewController: submitRejection(post, comments)
+        destroy PostReviewForm
+        ReviewController -> PostController: markPostAsRejected(post, comments)
+        activate PostController
+        deactivate PostController
+        ReviewController -> NotificationController: notifyClub(status)
+        deactivate ReviewController
+        NotificationController --> Club: Post Rejected Notification with Comments
+        deactivate NotificationController
+    end
+    deactivate PostReviewForm
+else No Pending Posts
+    activate ReviewRequestedPosts
+    PostController --> ReviewController: Posts List
+    deactivate PostController
+    ReviewController -> ReviewRequestedPosts: DisplayNoPendingPosts()
+    ReviewRequestedPosts -> PR: Display "No pending posts to review."
+    deactivate ReviewRequestedPosts
 end
 
+deactivate ReviewRequestedPosts
 deactivate Dashboard
 @enduml
+
 
 9)View pending news: 1
 
