@@ -101,53 +101,6 @@ end
 
 @enduml
 
-4)view
-@startuml
-actor Student
-participant "NewsFeed" <<boundary>>
-participant "NewsController" <<control>>
-participant "PostService" <<entity>>
-
-activate NewsFeed
-Student -> NewsFeed: Access News Feed
-NewsFeed -> NewsController: loadNewsFeed()
-activate NewsController
-NewsController --> NewsFeed: displayTags("For You", "Other", ...) 
-NewsFeed --> Student: Show Tags
-
-alt Student Selects Tag
-    Student -> NewsFeed: selectTag("For You") 
-    NewsFeed -> NewsController: loadPostsByTag("For You")
-else Student Views "Other"
-    NewsFeed -> NewsController: loadAllPosts()
-end
-
-NewsController -> PostService: getPosts()
-activate PostService
-PostService --> NewsController: returnPosts(posts) 
-NewsController-->NewsFeed:returnpost()
-deactivate PostService
-NewsFeed --> Student: displayPosts(posts)
-
-alt Student Views Post Details
-    Student -> NewsFeed: selectPost(post)
-    NewsFeed->NewsController:loadpostdetail()
-    NewsController -> PostService: getPostDetails(postID)
-    activate PostService
-    PostService --> NewsController: returnPostDetails(postDetails)
-    NewsController-->NewsFeed:returnpostdetail()
-    deactivate PostService
-    NewsFeed -> Student: displayPostDetails(postDetails)
-end
-
-alt No Posts Available
-    NewsController -> NewsFeed: displayNoPostsMessage()
-    NewsFeed -> Student: Show "No news available at this time."
-end
-
-deactivate NewsController
-deactivate NewsFeed
-@enduml
 
 5) PR-post general :1
 
@@ -248,45 +201,156 @@ deactivate ReviewController
 deactivate Dashboard
 @enduml
 
-7)View submitted post ???
+
+7) manage post club : 1
 
 @startuml
-actor ClubPresident
-participant "Dashboard" <<boundary>>
-participant "PostController" <<control>>
-participant "PostService" <<entity>>
+actor Club
+boundary Dashboard
+boundary postednews
+boundary editpage
+entity "Posts" 
 
 activate Dashboard
-ClubPresident -> Dashboard: Access Submitted Posts
-Dashboard -> PostController: loadSubmittedPosts()
-activate PostController
-PostController -> PostService: getSubmittedPosts()
-activate PostService
-PostService --> PostController: returnSubmittedPosts(posts)
-deactivate PostService
+Club -> Dashboard: Select manage Posts
+activate postednews
+Dashboard -> postednews: open()
+destroy Dashboard
+activate Posts
+postednews -> Posts: getSubmittedPosts()
 
-alt Submitted Posts Exist
-    PostController -> Dashboard: displaySubmittedPosts(posts) 
-    ClubPresident -> Dashboard: selectPost(post)
-    Dashboard-> PostController:loadrequestedpost()
-
-    alt Post is Rejected
-        PostController->Dashboard:Displayselectedpostineditableformat()
-        ClubPresident -> Dashboard: editPost(post) 
-        Dashboard -> PostController: updatePost(post) 
-        PostController -> PostService: updatePost(post)
-        activate PostService
-        PostService --> PostController: postUpdated()
-        deactivate PostService
-        Dashboard -> ClubPresident: Show Updated Post
-    end
-
-else No Submitted Posts
-    PostController -> Dashboard: displayNoSubmittedPostsMessage()
-    Dashboard -> ClubPresident: Show "No submitted posts available."
+alt  No Submitted Posts
+    Posts --> postednews: No submitted posts
+    postednews --> Club: No submitted posts available.
+else Submitted Posts Exist
+    Posts--> postednews: posts
+    Club -> postednews: select Post
+    postednews->editpage:open()
+    destroy postednews
+    activate editpage
+    Club -> editpage: edit content and select submit
+    editpage -> Posts: updatepost()
+    Posts-->editpage:  Updated successfully
+    editpage-->Club: Updated Successfully
+    deactivate Posts
+    deactivate
 end
 
-deactivate PostController
+deactivate Dashboard
+@enduml 
+
+8) rejected posts club: 1
+
+@startuml
+actor Club
+boundary Dashboard
+boundary rejectednews
+boundary editpage
+entity "Posts" 
+
+activate Dashboard
+Club -> Dashboard: Select rejected Posts
+activate rejectednews
+Dashboard -> rejectednews: open()
+destroy Dashboard
+activate Posts
+rejectednews -> Posts: getrejectedPosts()
+
+alt  No Submitted Posts
+    Posts --> rejectednews: No rejected posts
+    rejectednews --> Club: No rejected posts available.
+else Submitted Posts Exist
+    Posts--> rejectednews: posts with the rejecton comment
+    Club -> rejectednews: select Post
+    rejectednews->editpage:open()
+    destroy rejectednews
+    activate editpage
+    Club -> editpage: edit content and select submit
+    editpage -> Posts: updatepost()
+    Posts-->editpage:  Updated successfully
+    editpage-->Club: Updated Successfully
+    deactivate Posts
+    deactivate editpage
+end
+
 deactivate Dashboard
 @enduml
 
+9)View pending news: 1
+
+ @startuml
+actor Club
+boundary Dashboard
+boundary Pendingnews
+entity Posts
+
+activate Dashboard
+Club -> Dashboard: Select Pending Posts
+activate Pendingnews
+Dashboard -> Pendingnews: open()
+destroy Dashboard
+activate Posts
+Pendingnews -> Posts: getpendingPosts()
+
+alt post exists
+Posts--> Pendingnews: pots
+else post doesn't exist
+Posts --> Pendingnews:Posts doesn't exist
+Pendingnews-->Club: No pending news exist.
+deactivate Pendingnews
+end
+
+@enduml
+
+10) view news feed: 1
+@startuml
+actor Student
+boundary Dashboard
+control Postcontroller
+entity Posts
+
+activate Dashboard
+Student -> Dashboard: Select News Feed
+activate Posts
+activate Postcontroller
+Dashboard-> Postcontroller: requestdata()
+Postcontroller--> Posts: retrievedata()
+Posts --> Postcontroller: return posts
+Postcontroller->Dashboard:posts
+
+Student ->Dashboard:Select post
+Dashboard-> Postcontroller: requestpostdata(post)
+Postcontroller-> Posts: retrievepostdata(post)
+Posts --> Postcontroller: return post
+Postcontroller-->Dashboard: post
+deactivate Postcontroller
+
+deactivate Dashboard
+deactivate Posts
+@enduml
+
+11) search :1
+
+@startuml
+actor Student
+boundary Dashboard
+control Postcontroller
+entity Posts
+
+activate Dashboard
+Student -> Dashboard: Select Search and input post title
+activate Posts
+activate Postcontroller
+Dashboard-> Postcontroller: requestpostdata(title)
+Postcontroller--> Posts: retrievedata()
+alt post exists
+Posts --> Postcontroller: return post
+Postcontroller->Dashboard:post
+else post doesn't exist
+Posts --> Postcontroller: post doesn't exist
+Postcontroller->Dashboard: Show nothing
+deactivate Postcontroller
+deactivate Dashboard
+deactivate Posts
+end
+@enduml
