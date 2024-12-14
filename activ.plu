@@ -1,0 +1,23 @@
+1)Create post pr and club 
+
+@startuml
+
+start
+
+:Initialize Create Post process;
+:Navigate to Post Form Page;
+:Provide post format;
+if (post format valid ?) then (yes)
+  if (User is Club ?) then (yes)
+    :Save Post to be reviewed by PR;
+  else (no)
+    :Upload post;
+  endif 
+else (no)
+  :Inform error in post format;
+  --> Provide post format; 
+endif
+
+stop
+
+@enduml
