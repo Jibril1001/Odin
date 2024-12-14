@@ -1,0 +1,118 @@
+@startuml
+class User {
+    +id: int
+    +email: string
+    +password: string
+    +role: string <<enum>> {"Club", "PR", "Student"}
+    +validateCredentials(): bool
+    +changePassword(newPassword: string): void
+}
+
+class Post {
+    +id: int
+    +title: string
+    +content: string
+    +tags: List<string>
+    +status: string <<enum>> {"Pending", "Approved", "Rejected"}
+    +authorId: int
+    +reviewedById: int
+    +create(): void
+    +update(): void
+    +getDetails(): Post
+}
+
+class Notification {
+    +id: int
+    +recipientId: int
+    +content: string
+    +type: string <<enum>> {"Approval", "Rejection", "RelevantPost"}
+    +send(): void
+}
+
+class PostController {
+    +fetchPosts(criteria: string): List<Post>
+    +submitPost(post: Post): void
+    +updatePost(post: Post): void
+    +fetchPostDetails(postId: int): Post
+}
+
+class ClubManagementController {
+    +approveClub(userId: int): void
+    +rejectClub(userId: int, comments: string): void
+    +sendTemporaryPassword(email: string): void
+}
+
+class AuthController {
+    +authenticate(credentials: dict): bool
+    +verifyTemporaryPassword(email: string, password: string): bool
+}
+
+class EmailService {
+    +sendTemporaryPassword(email: string, tempPassword: string): void
+}
+
+class NotificationService {
+    +notifyApproval(post: Post): void
+    +notifyRejection(post: Post, comments: string): void
+    +notifyRelevantPost(post: Post, students: List<User>): void
+}
+
+class Logger {
+    +logEvent(event: string): void
+    +logError(error: string): void
+}
+
+class Dashboard {
+    +loadSection(sectionName: string): void
+}
+
+class PRDashboard <<boundary>> {
+    +manageClubs(): void
+    +reviewPosts(): void
+}
+
+class ClubDashboard <<boundary>> {
+    +viewApprovedPosts(): List<Post>
+    +viewRejectedPosts(): List<Post>
+    +createPost(): void
+    +editPost(postId: int): void
+}
+
+class StudentDashboard <<boundary>> {
+    +viewNewsFeed(): List<Post>
+    +searchPosts(criteria: string): List<Post>
+}
+
+class LoginPage <<boundary>> {
+    +displayLogin(): void
+    +submitCredentials(credentials: dict): void
+}
+
+class SignupPage <<boundary>> {
+    +displaySignupForm(): void
+    +submitRegistration(details: dict): void
+}
+
+User "1" <-- "0..*" Notification : recipientId
+User "1" <-- "0..*" Post : authorId
+User "1" <-- "0..*" Post : reviewedById
+PostController "1" --> "0..*" Post
+ClubManagementController "1" --> "1" User
+ClubManagementController "1" --> "1" EmailService
+ClubManagementController "1" --> "1" Logger
+NotificationService "1" --> "0..*" Notification
+NotificationService "1" --> "1" Logger
+AuthController "1" --> "1" User
+Dashboard <|-- PRDashboard
+Dashboard <|-- ClubDashboard
+Dashboard <|-- StudentDashboard
+LoginPage "1" --> "1" AuthController
+SignupPage "1" --> "1" AuthController
+SignupPage "1" --> "1" Logger
+PRDashboard "1" --> "1" ClubManagementController
+PRDashboard "1" --> "1" PostController
+ClubDashboard "1" --> "1" PostController
+ClubDashboard "1" --> "1" NotificationService
+StudentDashboard "1" --> "1" PostController
+StudentDashboard "1" --> "1" NotificationService
+@enduml

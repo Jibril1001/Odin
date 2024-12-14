@@ -107,39 +107,6 @@ deactivate Dashboard
 @enduml
 
 
-View pending news 1
-
-@startuml
-actor Club
-boundary Dashboard
-boundary Pendingnews
-control Postcontroller
-entity Posts
-
-activate Dashboard
-Club -> Dashboard: Select Pending Posts
-activate Pendingnews
-Dashboard -> Pendingnews: open()
-destroy Dashboard
-activate Posts
-activate Postcontroller
-Pendingnews -> Postcontroller: getpendingnews()
-Postcontroller->Posts: getpendingPosts()
-
-alt post exists
-Posts--> Postcontroller:posts
-Postcontroller-->Pendingnews: posts
-else post doesn't exist
-Posts --> Postcontroller: No posts exist
-deactivate Posts
-Postcontroller --> Pendingnews:Posts doesn't exist
-deactivate Postcontroller
-Pendingnews-->Club: display No pending news exist.
-deactivate Pendingnews
-end
-
-@enduml
-
 pr manage his post
 
 @startuml

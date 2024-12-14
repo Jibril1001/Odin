@@ -1,0 +1,27 @@
+
+@startuml
+start
+:User enters login details;
+:Validate User;
+if (Authentication Successful?) then (Yes)
+  :Redirect to Dashboard;
+else (No)
+  :Display "Invalid Email or Password";
+endif
+stop
+@enduml
+
+
+@startuml
+start
+:Student enters registration details;
+:Validate Registration;
+if (Validation Successful?) then (Yes)
+  :Save Student Data;
+  :Display "Registration Successful";
+  :Redirect to Login Page;
+else (No)
+  :Display "Error Message";
+endif
+stop
+@enduml

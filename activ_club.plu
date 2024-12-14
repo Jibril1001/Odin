@@ -1,0 +1,41 @@
+@startuml
+start
+:Club selects "Manage Posts";
+:Dashboard opens Posted News;
+if (Submitted Posts Exist?) then (Yes)
+  :Club selects a post to edit;
+  :Edit post content;
+  :Submit updated post;
+  :Save updated post to Database;
+  :Display "Updated Successfully";
+else (No)
+  :Display "No Submitted Posts";
+endif
+stop
+@enduml
+
+@startuml
+start
+:Club selects "Create Post";
+:Dashboard opens Post Form;
+:Club fills post form;
+if (Validation Successful?) then (Yes)
+  :Save Post to Database;
+  :Display "News Created Successfully";
+else (No)
+  :Display "Invalid Post";
+endif
+stop
+@enduml
+
+@startuml
+start
+:Club selects "Pending Posts";
+:Dashboard opens Pending News;
+if (Pending Posts Exist?) then (Yes)
+  :Retrieve and Display Pending Posts;
+else (No)
+  :Display "No Pending News";
+endif
+stop
+@enduml
